@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hacker Attack Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        canvas {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hacker Attack Simulation</h1>
+    <form id="simulation-form">
+        <label for="num-servers">Number of Servers:</label>
+        <input type="number" id="num-servers" value="10" min="1" required><br><br>
+
+        <label for="num-attackers">Number of Attackers:</label>
+        <input type="number" id="num-attackers" value="5" min="1" required><br><br>
+
+        <label for="penetration-prob">Probability of Penetration (0 to 1):</label>
+        <input type="number" id="penetration-prob" value="0.5" step="0.01" min="0" max="1" required><br><br>
+
+        <button type="button" onclick="runSimulation()">Run Simulation</button>
+    </form>
+
+    <h2>Cumulative Penetration Attempts</h2>
+    <canvas id="penetrationChart"></canvas>
+
+    <h2>Distribution of Successful Penetrations</h2>
+    <canvas id="distributionChart"></canvas>
+
+    <script>
+        function runSimulation() {
+            const numServers = parseInt(document.getElementById('num-servers').value);
+            const numAttackers = parseInt(document.getElementById('num-attackers').value);
+            const penetrationProb = parseFloat(document.getElementById('penetration-prob').value);
+
+            // Simulate the attacks
+            const results = Array.from({ length: numAttackers }, () =>
+                Array.from({ length: numServers }, () => Math.random() < penetrationProb)
+            );
+
+            const cumulativePenetrations = Array.from({ length: numServers }, (_, server) =>
+                results.reduce((sum, attacker) => sum + (attacker[server] ? 1 : 0), 0)
+            );
+
+            const successCounts = results.map(attacks => attacks.filter(success => success).length);
+
+            // Render cumulative penetration chart
+            const ctx1 = document.getElementById('penetrationChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({ length: numServers }, (_, i) => `Server ${i + 1}`),
+                    datasets: [{
+                        label: 'Cumulative Penetrations',
+                        data: cumulativePenetrations,
+                        backgroundColor: 'skyblue',
+                        borderColor: 'black',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Server Number'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Cumulative Penetrations'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Prepare data for the distribution chart
+            const maxSuccesses = Math.max(...successCounts);
+            const distribution = Array.from({ length: maxSuccesses + 1 }, (_, i) =>
+                successCounts.filter(count => count === i).length
+            );
+
+            // Render distribution chart
+            const ctx2 = document.getElementById('distributionChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({ length: maxSuccesses + 1 }, (_, i) => `${i} Penetrations`),
+                    datasets: [{
+                        label: 'Frequency',
+                        data: distribution,
+                        backgroundColor: 'lightgreen',
+                        borderColor: 'black',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Number of Penetrations'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Frequency'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
